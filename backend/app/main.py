@@ -1,11 +1,35 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from sqlalchemy import text
-from .database import engine
-from . import models
+from sqlalchemy.orm import Session
+from .database import engine, SessionLocal
+from . import models, schemas
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post("/stocks")
+def create_stock(stock: schemas.StockCreate, db: Session = Depends(get_db)):
+    db_stock = models.Stock(
+        symbol=stock.symbol,
+        name=stock.name,
+        price=stock.price
+    )
+
+    db.add(db_stock)
+
+    db.commit()
+
+    db.refresh(db_stock)
+
+    return{"message": "저장 완료!", "data": db_stock}
 
 @app.get("/")
 def read_root():
