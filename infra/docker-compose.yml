@@ -1,0 +1,30 @@
+version:
+
+services:
+  backend:
+    build:
+      context: ../backend
+    container_name: stock-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/stockdb
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: stock-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGES_DB: stockdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
