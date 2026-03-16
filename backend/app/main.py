@@ -42,6 +42,23 @@ def read_stocks(db: Session = Depends(get_db)):
     stocks = db.query(models.Stock).all()
     return stocks
 
+# [Update] 주식 정보 수정
+@app.put("/stocks/{id}", response_model=schemas.StockRead)
+def update_stock(id: int, stock: schemas.StockUpdate, db: Session = Depends(get_db)):
+    db_stock = db.query(models.Stock).filter(models.Stock.id == id).first()
+
+    if not db_stock:
+        raise HTTPException(status_code=404, detail="해당 ID의 주식 정보를 찾을수 없습니다.")
+    
+    update_data = stock.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_stock, key, value)
+
+    db.commit()
+    db.refresh(db_stock)
+    
+    return db_stock
+
 # [Delete] 주식 정보 삭제
 @app.delete("/stocks/{id}")
 def delete_stock(id: int, db: Session = Depends(get_db)):
