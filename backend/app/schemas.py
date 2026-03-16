@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class StockCreate(BaseModel):
     symbol: str
@@ -10,3 +11,8 @@ class StockRead(StockCreate):
 
     class Config:
         from_attributes = True
+
+class StockUpdate(BaseModel):
+    symbol: Optional[str] = None
+    name: Optional[str] = None
+    price: Optional[float] = None
