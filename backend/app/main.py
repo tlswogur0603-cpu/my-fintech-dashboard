@@ -30,7 +30,8 @@ def create_stock(stock: schemas.StockCreate, db: Session = Depends(get_db)):
     db_stock = models.Stock(
         symbol=stock.symbol,
         name=stock.name,
-        price=stock.price
+        price=stock.price,
+        quantity=stock.quantity
     )
 
     db.add(db_stock)
@@ -103,6 +104,47 @@ def get_stock_profit(stock_id: int, db: Session = Depends(get_db)):
         "current_price_krw": f"{current_price_krw:,.0f}원",
         "profit_rate": f"{profit_rate:.2f}%",
         "total_value_krw": f"{total_value_krw:,.0f}원"
+    }
+
+@app.get("/portfolio/allocation")
+def get_portfolio_allocation(db: Session = Depends(get_db)):
+    stocks = db.query(models.Stock).all()
+    if not stocks:
+        return {"message": "등록된 주식이 없습니다.", "allocation": []}
+    
+    ticker_usdkrw = yf.Ticker("USDKRW=X")
+    exchange_rate = ticker_usdkrw.history(period="1d")['Close'].iloc[-1]
+
+    portfolio_data = []
+    total_portfolio_value_krw = 0
+
+    for stock in stocks:
+        ticker = yf.Ticker(stock.symbol)
+        current_price_usd = ticker.history(period="1d")['Close'].iloc[-1]
+        
+        stock_total_value_krw = current_price_usd * stock.quantity * exchange_rate
+
+        portfolio_data.append({
+            "symbol": stock.symbol,
+            "name": stock.name,
+            "stock_value_krw": stock_total_value_krw
+        })
+
+        total_portfolio_value_krw += stock_total_value_krw
+
+    final_allocation = []
+    for item in portfolio_data:
+        weight = (item["stock_value_krw"] / total_portfolio_value_krw) * 100
+        final_allocation.append({
+            "symbol": item["symbol"],
+            "name": item["name"],
+            "value_krw": f"{item['stock_value_krw']:,.0f}원",
+            "weight": f"{weight:.2f}%"
+        })
+
+    return {
+        "total_asset_value_krw": f"{total_portfolio_value_krw:,.0f}원",
+        "allocation": final_allocation
     }
 
 # 서버 테스트

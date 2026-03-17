@@ -8,3 +8,4 @@ class Stock(Base):
     symbol = Column(String, index=True)
     name = Column(String)
     price = Column(Float)
+    quantity = Column(Float, default=1.0)
