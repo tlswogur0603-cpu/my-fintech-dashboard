@@ -5,6 +5,7 @@ class StockCreate(BaseModel):
     symbol: str
     name: str
     price: float
+    quantity: float = 1.0
 
 class StockRead(StockCreate):
     id: int
@@ -16,3 +17,4 @@ class StockUpdate(BaseModel):
     symbol: Optional[str] = None
     name: Optional[str] = None
     price: Optional[float] = None
+    quantity: Optional[float] = None
