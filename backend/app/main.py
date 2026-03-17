@@ -5,6 +5,7 @@ from .database import engine, SessionLocal
 from . import models, schemas
 from typing import List
 from fastapi import HTTPException
+import yfinance as yf
 
 # 데이터베이스 테이블 생성
 models.Base.metadata.create_all(bind=engine)
@@ -18,6 +19,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_current_exchange_rate():
+    ticker = yf.Ticker("USDKRW=X")
+    return ticker.fast_info['last_price']
 
 # [Create] 신규 주식 정보 저장
 @app.post("/stocks")
@@ -71,6 +76,34 @@ def delete_stock(id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": f"ID {id}번 주식 정보가 삭제되었습니다."}
+
+@app.get("/stocks/{stock_id}/profit")
+def get_stock_profit(stock_id: int, db: Session = Depends(get_db)):
+    stock = db.query(models.Stock).filter(models.Stock.id == stock_id).first()
+    if not stock:
+        raise HTTPException(status_code=404, detail="해당 주식을 찾을수 없습니다.")
+    
+    try:
+        ticker = yf.Ticker(stock.symbol)
+        current_price_usd = ticker.fast_info['last_price']
+        exchange_rate = get_current_exchange_rate()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"시세 정보 조회 실패: {e}")
+    
+    profit_rate = ((current_price_usd - stock.price) / stock.price) * 100
+
+    current_price_krw = current_price_usd * exchange_rate
+    total_value_krw = current_price_krw * 1
+
+    return {
+        "symbol": stock.symbol,
+        "buy_price_usd": f"${stock.price:.2f}",
+        "current_price_usd": f"${current_price_usd:.2f}",
+        "exchange_rate": f"{exchange_rate:.2f}원",
+        "current_price_krw": f"{current_price_krw:,.0f}원",
+        "profit_rate": f"{profit_rate:.2f}%",
+        "total_value_krw": f"{total_value_krw:,.0f}원"
+    }
 
 # 서버 테스트
 @app.get("/")
