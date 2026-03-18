@@ -33,8 +33,8 @@ def update_stock(stock_id: int, stock: schemas.StockUpdate, db: Session):
     return db_stock
 
 # [Delete] 주식 정보 삭제
-def delete_stock(id: int, db: Session):
-    db_stock = db.query(models.Stock).filter(models.Stock.id == id).first()
+def delete_stock(stock_id: int, db: Session):
+    db_stock = db.query(models.Stock).filter(models.Stock.id == stock_id).first()
 
     if db_stock:
         db.delete(db_stock)
