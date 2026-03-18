@@ -36,6 +36,7 @@ def update_stock(stock_id: int, stock: schemas.StockUpdate, db: Session = Depend
 @router.delete("/{stock_id}") 
 def delete_stock(stock_id: int, db: Session = Depends(get_db)):
     success = crud.delete_stock(db=db, stock_id=stock_id)
+    db.close()
     if not success:
         raise HTTPException(status_code=404, detail="해당 ID의 주식 정보를 찾을수 없습니다.")
     return {"message": f"ID {stock_id}번 주식 정보가 삭제되었습니다."}
