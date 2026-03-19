@@ -4,7 +4,7 @@ from datetime import datetime
 
 class StockCreate(BaseModel):
     ticker: str
-    name: Optional[str] = None
+    name: str
     purchase_price: float
     quantity: float = 1.0
 
