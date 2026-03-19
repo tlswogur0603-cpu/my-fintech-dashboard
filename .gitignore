@@ -1,9 +1,23 @@
 # 비밀 환경 변수 파일
 .env
 
-# 파이썬 가상환경 폴더 (자동 생성됨)
+# 파이썬 가상환경 폴더
 venv/
+.venv/
 __pycache__/
+*.py[cod]
 
 # 시스템 파일
 .DS_Store
+Thumbs.db
+
+# --- 프론트엔드 (React Native / Expo) 추가 ---
+node_modules/
+.expo/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 혹시 모르니 경로 지정 추가
+frontend/src/node_modules/
