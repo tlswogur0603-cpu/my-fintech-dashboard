@@ -7,9 +7,9 @@ import {
     TouchableOpacity,
     Alert,
     TextInput,
-    Keyboard, 
-    KeyboardAvoidingView, 
-    Platform 
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import axios from 'axios';
 import { globalStyles as styles } from './styles';
@@ -39,6 +39,33 @@ export default function App() {
         setDisplayedPrice(formatted);
     };
 
+    const fetchRealtimePrice = async () => {
+        if (!newStockName) {
+            Alert.alert("알림", "티커를 입력해주세요. (예: AAPL)");
+            return;
+        }
+
+        try {
+            const response = await axios.get(`http://192.168.75.233/api/stocks/price/${newStockName.toUpperCase()}`);
+            const price = response.data.price_krw.toString();
+
+            Alert.alert(
+                "실시간 가격 조회",
+                `현재 시장가: ${Number(price).toLocaleString()}원\n이 가격을 매수가로 입력할까요?`,
+                [
+                    { text: "아니오 (직접 입력)", style: "cancel" },
+                    {
+                        text: "예 (자동 입력)",
+                        onPress: () => handlePriceChange(price) // 여기서 가격이 자동 세팅됩니다.
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error("가격 조회 실패:", error);
+            Alert.alert("에러", "주가 정보를 가져올 수 없습니다. 티커를 확인해주세요.");
+        }
+    };
+
     const addStock = async () => {
         const rawPrice = displayedPrice.replace(/,/g, '');
 
@@ -49,15 +76,15 @@ export default function App() {
 
         try {
             await axios.post('http://192.168.75.233/api/stocks', {
-                ticker: "TEST", 
+                ticker: "TEST",
                 name: String(newStockName).trim(),
                 purchase_price: Number(rawPrice),
-                quantity: 1.0 
+                quantity: 1.0
             });
             Alert.alert("성공", "새로운 종목이 추가되었습니다.");
             setNewStockName('');
             setDisplayedPrice('');
-            Keyboard.dismiss(); 
+            Keyboard.dismiss();
             fetchStocks();
         } catch (error) {
             console.error("추가 실패:", error.response?.data);
@@ -69,7 +96,7 @@ export default function App() {
         try {
             await axios.delete(`http://192.168.75.233/api/stocks/${stock_id}`);
             Alert.alert("성공", "종목이 삭제되었습니다.");
-            fetchStocks(); 
+            fetchStocks();
         } catch (error) {
             console.error("삭제 실패:", error);
         }
@@ -88,19 +115,25 @@ export default function App() {
     }
 
     return (
-        <KeyboardAvoidingView 
-            style={styles.container} 
+        <KeyboardAvoidingView
+            style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <Text style={styles.title}>StockFlow 리스트 📈</Text>
 
             <View style={{ marginBottom: 20, padding: 15, backgroundColor: '#f9f9f9', borderRadius: 10, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 }}>
                 <TextInput
-                    placeholder="종목명 입력 (예: 삼성전자)"
+                    placeholder="종목명 입력 (예: 005930.KS)"
                     value={newStockName}
                     onChangeText={setNewStockName}
                     style={{ borderBottomWidth: 1, borderColor: '#ccc', marginBottom: 15, padding: 10 }}
                 />
+                <TouchableOpacity
+                    onPress={fetchRealtimePrice}
+                    style={{ backgroundColor: '#34C759', padding: 10, borderRadius: 8, alignItems: 'center', marginBottom: 15 }}
+                >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>🔍 현재가 조회 (한국은 .KS 붙이기)</Text>
+                </TouchableOpacity>
                 <TextInput
                     placeholder="가격 입력 (예: 195,000)"
                     value={displayedPrice}
@@ -108,7 +141,7 @@ export default function App() {
                     keyboardType="numeric"
                     style={{ borderBottomWidth: 1, borderColor: '#ccc', marginBottom: 15, padding: 10 }}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={addStock}
                     style={{ backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' }}
                 >
