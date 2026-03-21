@@ -13,6 +13,30 @@ def get_current_exchange_rate():
     ticker = yf.Ticker("USDKRW=X")
     return ticker.fast_info['last_price']
 
+@router.get("/price/{ticker}")
+def get_realtime_price(ticker: str):
+    try:
+        stock = yf.Ticker(ticker)
+        current_price = stock.fast_info['last_price']
+        currency = stock.info.get('currency', 'USD')
+
+        price_krw = current_price
+
+        if currency == 'USD':
+            exchange_rate = get_current_exchange_rate()
+            price_krw = current_price * exchange_rate
+
+        return {
+            "ticker": ticker,
+            "current_price": round(current_price, 2),
+            "price_krw": round(price_krw, 0),
+            "currency": currency,
+            "exchange_rate": round(exchange_rate, 2) if currency == 'USD' else None,
+            "timestamp": stock.fast_info.get('last_price_timestamp', stock.fast_info.get('timestamp', 0))
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"주가 조회 실패: {str(e)}")
+
 # [내부 함수] 현재 달러/원 환율 정보를 실시간으로 가져옴
 @router.post("")
 def create_stock(stock: schemas.StockCreate, db: Session = Depends(get_db)):
