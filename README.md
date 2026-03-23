@@ -58,21 +58,29 @@ graph TD
 ## 📂 파일 및 폴더 구조
 ```text
 StockFlow/
-├── backend/            # FastAPI 백엔드
-│   ├── app/            # 실제 소스 코드
-│   │   ├── main.py     # 서버 시작점
-│   │   ├── database.py # DB 연결 설정
-│   │   ├── models.py   # DB 테이블 정의
-│   │   └── routers/    # API 기능별 코드 (주식, 뉴스, AI 등)
-│   ├── Dockerfile      # 백엔드 도커 설정
-│   └── requirements.txt# 설치할 라이브러리 목록
-├── frontend/           # React Native 프론트엔드
-│   ├── src/            # 소스 코드
-│   └── package.json    # 프로젝트 설정
-├── infra/              # 인프라 및 배포 설정
-│   ├── nginx.conf      # Nginx 설정 파일
-│   └── docker-compose.yml # 컨테이너 관리 파일
-└── README.md           # 프로젝트 설명서
+├── backend/                # FastAPI 백엔드
+│   ├── app/                # 어플리케이션 핵심 로직
+│   │   ├── routers/        # API 엔드포인트 분리 (주식, 뉴스 등)
+│   │   │   └── stocks.py   # 주식 관련 API 로직
+│   │   ├── crud.py         # DB 생성/읽기/수정/삭제 로직
+│   │   ├── database.py     # SQLAlchemy DB 연결 설정
+│   │   ├── main.py         # 백엔드 서버 시작점
+│   │   ├── models.py       # DB 테이블(모델) 정의
+│   │   ├── schemas.py      # Pydantic 데이터 검증 모델
+│   │   └── test_api.py     # API 테스트 스크립트
+│   ├── Dockerfile          # 백엔드 컨테이너 빌드 설정
+│   └── requirements.txt    # 설치 필요한 라이브러리 목록 (yfinance, fastapi 등)
+├── frontend/               # React Native (Expo) 프론트엔드
+│   ├── src/                # 소스 코드 폴더
+│   ├── App.js              # 앱 메인 화면 및 로직
+│   ├── package.json        # 프론트엔드 의존성 관리
+│   └── styles.js           # 앱 스타일링 설정
+├── infra/                  # 인프라 및 배포 설정
+│   ├── nginx.conf          # Nginx 리버스 프록시 설정 (보안)
+│   └── docker-compose.yml  # 전체 컨테이너(API, DB, Nginx, Tunnel) 통합 관리
+├── .env                    # 환경 변수 (DB 비번, API 키 등 - 로컬 전용)
+├── .gitignore              # Git 제외 목록 (노드 모듈, .env 등)
+└── README.md               # 프로젝트 설명서
 
 ## 📋 버전 관리
 
