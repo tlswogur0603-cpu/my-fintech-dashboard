@@ -4,7 +4,10 @@ from typing import List
 import yfinance as yf
 from datetime import datetime
 import time # [보완] 현재 시간 대비 예외 처리를 위해 추가
-from .. import crud, schemas, models 
+import os
+import google.generativeai as genai
+
+from .. import crud, schemas, models
 from ..database import get_db
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
@@ -40,7 +43,7 @@ def get_stock_news_data(ticker: str):
                 # Unix Timestamp를 ISO 형식으로 변환
                 pub_time = datetime.fromtimestamp(raw_ts).isoformat()
             else:
-                # 날짜 정보가 아예 없을 경우 현재 시간으로 대체 (1970년 방지)
+                # 날짜 정보가 아예 없을 경우 현재 시간으로 대체 
                 pub_time = datetime.now().isoformat()
             
             # 썸네일 URL 추출 안전하게 처리
@@ -59,6 +62,58 @@ def get_stock_news_data(ticker: str):
     except Exception as e:
         print(f"뉴스 데이터 추출 실패 ({ticker}): {e}")
         return []
+
+
+def generate_gemini_summary(news_items: List[dict]) -> str:
+    """Google Gemini를 이용해 뉴스 제목 기반 요약 생성."""
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        print('GOOGLE_API_KEY가 설정되지 않았습니다.')
+        return 'AI 요약을 생성할 수 없습니다. 환경 변수에 API 키를 설정해주세요.'
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        print('google-generativeai 패키지가 설치되어 있지 않습니다.')
+        return 'AI 요약 라이브러리가 설치되어 있지 않아 생성할 수 없습니다.'
+
+    genai.configure(api_key=api_key)
+
+    headlines = '\n'.join([
+        f"{i+1}. {item.get('title','제목 없음')} ({item.get('publisher','출처 없음')})"
+        for i, item in enumerate(news_items)
+    ])
+
+    system_prompt = (
+        "너는 15년 경력의 수석 주식 애널리스트이다."
+        "투자자 관점에서 즉시 활용 가능한 분석을 냉철하고 전문적인 문어체로 작성하라."
+    )
+
+    user_prompt = (
+        "뉴스 5개를 종합 분석하여 딱 한 번만 응답하라:\n"
+        "1. [오늘의 한 줄 요약]: 전체 뉴스를 관통하는 핵심 이슈 (강조 표시)\n"
+        "2. [애널리스트 시선]: 리스크와 기회를 포함한 향후 전망 2~3문장\n"
+        "3. [투자 매력도]: 🔴부정 / 🟡중립 / 🟢긍정 중 택1 + 한 줄 이유\n"
+        f"\n뉴스 리스트:\n{headlines}"
+    )
+
+    try:
+        # 1. 모델 설정 
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        # 2. 호출 방식 변경 
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+        response = model.generate_content(full_prompt)
+
+        # 3. if문
+        if response and response.text:
+            return response.text
+        return 'AI 요약을 생성했지만 응답 내용이 비어있습니다.'
+
+    except Exception as e:
+        print(f'Gemini 요약 생성 실패: {e}')
+        return f"AI 요약 생성 중 오류가 발생: {str(e)[:50]}"
+
 
 # --- [API 엔드포인트] ---
 
@@ -87,13 +142,26 @@ def get_realtime_price(ticker: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"주가 조회 실패: {str(e)}")
 
-@router.get("/{ticker}/news")
+@router.get("/{ticker}/news", response_model=schemas.NewsResponse)
 def get_ticker_news(ticker: str):
-    """[NEW] 특정 종목 뉴스 5개 반환 (AI 요약의 기초 데이터)"""
+    """[NEW] 특정 종목 뉴스 5개 반환 + Gemini AI 요약 추가"""
     news = get_stock_news_data(ticker.upper())
     if not news:
-        return {"ticker": ticker.upper(), "news": [], "message": "최근 뉴스가 없습니다."}
-    return {"ticker": ticker.upper(), "news": news}
+        return {
+            "ticker": ticker.upper(),
+            "news": [],
+            "ai_summary": "최근 뉴스가 없어서 AI 요약을 생성할 수 없습니다.",
+            "message": "최근 뉴스가 없습니다."
+        }
+
+    ai_summary = generate_gemini_summary(news)
+
+    return {
+        "ticker": ticker.upper(),
+        "news": news,
+        "ai_summary": ai_summary,
+        "message": "성공"
+    }
 
 @router.post("")
 def create_stock(stock: schemas.StockCreate, db: Session = Depends(get_db)):
