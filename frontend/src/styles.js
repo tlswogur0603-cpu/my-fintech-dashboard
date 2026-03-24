@@ -50,5 +50,31 @@ export const globalStyles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 14
+    },
+    // ai 답변 ui
+    aiCard: {
+        backgroundColor: '#F0F7FF', 
+        padding: 18, 
+        borderRadius: 12, 
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#D1E9FF',
+    },
+    aiTitle: { 
+        fontWeight: 'bold', 
+        color: '#007AFF', 
+        fontSize: 16,
+        marginBottom: 8,
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    markdownBody: {
+        color: '#334155',
+        fontSize: 14,
+        lineHeight: 22,
+    },
+    markdownStrong: {
+        fontWeight: 'bold',
+        color: '#000',
     }
 });
