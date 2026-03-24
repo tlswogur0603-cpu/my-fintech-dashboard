@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class StockCreate(BaseModel):
@@ -20,3 +20,21 @@ class StockUpdate(BaseModel):
     name: Optional[str] = None
     purchase_price: Optional[float] = None
     quantity: Optional[float] = None
+
+
+class NewsItem(BaseModel):
+    title: Optional[str] = None
+    link: Optional[str] = None
+    publisher: Optional[str] = None
+    published_at: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+
+
+class NewsResponse(BaseModel):
+    ticker: str
+    news: List[NewsItem]
+    ai_summary: Optional[str] = None
+    message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
