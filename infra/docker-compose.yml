@@ -13,6 +13,8 @@ services:
       - DATABASE_URL=postgresql://user:password@db:5432/stockdb
     depends_on:
       - db
+    env_file:
+      - ../.env
 
   cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
